@@ -1,2 +1,5 @@
-# canon-bo-segmented
-རྩོམ་སྒྲིག་པ་དང་། ཡིག་ཚང་དོ་དམ་པ། ཞུ་དག་པ་སོགས་པ་ཤིན་ཏུ་མཁོ་བའི་    ཐབས་ལམ་སྣ་ཚོགས་བཞུགས་སོ། །རིག་པའི་གནས་ལ་སྦྱངས་པ་མ་བྱས་ན་སྐྱེས་པ་དོན་མེད་རེད། ཧ་ག་སོང་མ།
+# canon-freq
+
+Working repository for frequency analysis in the Tibetan canon.
+
+Segmentation and POS-tagging are improved gradually by chuncks of 1000 most frequent words. 
