@@ -1,4 +1,2 @@
 # canon-bo-segmented
-Kangyur and Tengyur segmented, pybo and manualm 
-dlkjflkdsalk;   
-sdfjl;ks
+རྩོམ་སྒྲིག་པ་དང་། ཡིག་ཚང་དོ་དམ་པ། ཞུ་དག་པ་སོགས་པ་ཤིན་ཏུ་མཁོ་བའི་    ཐབས་ལམ་སྣ་ཚོགས་བཞུགས་སོ། །རིག་པའི་གནས་ལ་སྦྱངས་པ་མ་བྱས་ན་སྐྱེས་པ་དོན་མེད་རེད། ཧ་ག་སོང་མ།
