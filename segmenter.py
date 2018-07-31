@@ -42,6 +42,26 @@ def get_lemmatized(tokens):
     out = [token.lemma if token.type == 'syl' else token.content for token in tokens]
     return ' '.join(out)
 
+def get_antconc_pos(tokens):
+    out = []
+    aa = False
+    for token in tokens:
+        if token.affixed:
+            if token.aa_word:
+                aa = True
+            out.append('{}_{}'.format(token.unaffixed_word, token.pos))
+        elif token.affix:
+            if aa:
+                out.append('{}_{}'.format('-' + token.cleaned_content, token.pos))
+                aa = False
+            else:
+                out.append('{}_{}'.format('+' + token.cleaned_content, token.pos))
+        elif token.type != 'syl':
+            out.append('{}_{}'.format(token.content, token.pos))
+        else:
+            out.append('{}_{}'.format(token.cleaned_content, token.pos))
+    return ' '.join(out)
+
 
 def get_cleaned(tokens):
     out = [token.cleaned_content if token.type == 'syl' else token.content for token in tokens]
@@ -67,17 +87,18 @@ def process_volume(folder, filename, collection):
     process(tokens, get_antconc_format, 'antconc', collection)
     process(tokens, get_lemmatized, 'lemmatized', collection)
     process(tokens, get_cleaned, 'cleaned', collection)
+    process(tokens, get_antconc_pos, 'antconc-pos', collection)
 
 
 if __name__ == '__main__':
     # kangyur
     kangyur_folder = 'files/k/'
     filenames = os.listdir(kangyur_folder)
-    for filename in filenames:
+    for filename in filenames[10:11]:
         process_volume(kangyur_folder, filename, 'k')
 
-    # tengyur
-    tengyur_folder = 'files/t/'
-    filenames = os.listdir(tengyur_folder)
-    for filename in filenames:
-        process_volume(tengyur_folder, filename, 't')
+    # # tengyur
+    # tengyur_folder = 'files/t/'
+    # filenames = os.listdir(tengyur_folder)
+    # for filename in filenames:
+    #     process_volume(tengyur_folder, filename, 't')
