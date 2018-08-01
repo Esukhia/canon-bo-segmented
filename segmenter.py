@@ -1,19 +1,17 @@
-import os
 from pathlib import Path
-from local_pybo import *
+from pybo import *
 import time
 
 tok = BoTokenizer('POS')
 
 
 def get_tokens(filename):
-    print(filename, '\n\tTokenizing...')
-    with open(filename) as f:
-        dump = f.read()
+    print(filename, '\n\tTokenizing...', end=' ')
+    dump = filename.read_text(encoding='utf-8-sig')
     start = time.time()
     tokens = tok.tokenize(dump)
     end = time.time()
-    print('\tTime:', end-start)
+    print('({:.0f}s.)'.format(end-start))
     return tokens
 
 
@@ -38,6 +36,27 @@ def get_antconc_format(tokens):
     return ' '.join(out)
 
 
+def get_antconc_pos(tokens):
+    out = []
+    aa = False
+    for token in tokens:
+        if token.affixed:
+            if token.aa_word:
+                aa = True
+            out.append('{}_{}'.format(token.unaffixed_word, token.pos))
+        elif token.affix:
+            if aa:
+                out.append('{}_{}'.format('-' + token.cleaned_content, token.pos))
+                aa = False
+            else:
+                out.append('{}_{}'.format('+' + token.cleaned_content, token.pos))
+        elif token.type != 'syl':
+            out.append('{}_{}'.format(token.content, token.pos))
+        else:
+            out.append('{}_{}'.format(token.cleaned_content, token.pos))
+    return ' '.join(out)
+
+
 def get_lemmatized(tokens):
     out = [token.lemma if token.type == 'syl' else token.content for token in tokens]
     return ' '.join(out)
@@ -50,34 +69,30 @@ def get_cleaned(tokens):
 
 def process(tokens, treatment, treatment_name, collection):
     treated = treatment(tokens)
-    out_filename = 'segmented'
-    for level in ['', collection, treatment_name]:
-        out_filename += level + '/'
-        level_path = Path(out_filename)
-        level_path.mkdir(parents=True, exist_ok=True)
+    out_path = Path('segmented') / collection / treatment_name / filename.name
+    for parent in reversed(out_path.parents):
+        parent.mkdir(parents=True, exist_ok=True)
 
-    out_filename += filename
-    with open(out_filename, 'w') as f:
-        f.write(treated)
-    print('Processed.')
+    out_path.write_text(treated, encoding='utf-8-sig')
+    print('\t\tProcessed', out_path.parts[2])
 
 
-def process_volume(folder, filename, collection):
-    tokens = get_tokens(folder + filename)
+def process_volume(filename, collection):
+
+    tokens = get_tokens(filename)
     process(tokens, get_antconc_format, 'antconc', collection)
     process(tokens, get_lemmatized, 'lemmatized', collection)
     process(tokens, get_cleaned, 'cleaned', collection)
+    process(tokens, get_antconc_pos, 'antconc-pos', collection)
 
 
 if __name__ == '__main__':
-    # kangyur
-    kangyur_folder = 'files/k/'
-    filenames = os.listdir(kangyur_folder)
-    for filename in filenames:
-        process_volume(kangyur_folder, filename, 'k')
+    kangyur = 'k'
+    k_folder = Path('files') / kangyur
+    for filename in list(k_folder.glob('*.txt'))[98:99]:
+        process_volume(filename, kangyur)
 
-    # tengyur
-    tengyur_folder = 'files/t/'
-    filenames = os.listdir(tengyur_folder)
-    for filename in filenames:
-        process_volume(tengyur_folder, filename, 't')
+    tengyur = 't'
+    t_folder = Path('files') / tengyur
+    for filename in list(t_folder.glob('*.txt'))[20:21]:
+        process_volume(filename, tengyur)
