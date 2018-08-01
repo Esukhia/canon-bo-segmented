@@ -94,11 +94,15 @@ if __name__ == '__main__':
     # kangyur
     kangyur_folder = 'files/k/'
     filenames = os.listdir(kangyur_folder)
-    for filename in filenames[10:11]:
-        process_volume(kangyur_folder, filename, 'k')
 
-    # # tengyur
-    # tengyur_folder = 'files/t/'
-    # filenames = os.listdir(tengyur_folder)
-    # for filename in filenames:
-    #     process_volume(tengyur_folder, filename, 't')
+    # for filename in filenames[10:11]:
+    for filename in filenames:
+        if not filename.startswith('.'):
+            process_volume(kangyur_folder, filename, 'k')
+
+    # tengyur
+    tengyur_folder = 'files/t/'
+    filenames = os.listdir(tengyur_folder)
+    for filename in filenames:
+        if not filename.startswith('.'):
+            process_volume(tengyur_folder, filename, 't')
