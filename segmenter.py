@@ -1,19 +1,17 @@
-import os
 from pathlib import Path
-from local_pybo import *
+from pybo import *
 import time
 
 tok = BoTokenizer('POS')
 
 
 def get_tokens(filename):
-    print(filename, '\n\tTokenizing...')
-    with open(filename) as f:
-        dump = f.read()
+    print(filename, '\n\tTokenizing...', end=' ')
+    dump = filename.read_text(encoding='utf-8-sig')
     start = time.time()
     tokens = tok.tokenize(dump)
     end = time.time()
-    print('\tTime:', end-start)
+    print('({:.0f}s.)'.format(end-start))
     return tokens
 
 
@@ -38,10 +36,6 @@ def get_antconc_format(tokens):
     return ' '.join(out)
 
 
-def get_lemmatized(tokens):
-    out = [token.lemma if token.type == 'syl' else token.content for token in tokens]
-    return ' '.join(out)
-
 def get_antconc_pos(tokens):
     out = []
     aa = False
@@ -63,6 +57,11 @@ def get_antconc_pos(tokens):
     return ' '.join(out)
 
 
+def get_lemmatized(tokens):
+    out = [token.lemma if token.type == 'syl' else token.content for token in tokens]
+    return ' '.join(out)
+
+
 def get_cleaned(tokens):
     out = [token.cleaned_content if token.type == 'syl' else token.content for token in tokens]
     return ' '.join(out)
@@ -70,20 +69,17 @@ def get_cleaned(tokens):
 
 def process(tokens, treatment, treatment_name, collection):
     treated = treatment(tokens)
-    out_filename = 'segmented'
-    for level in ['', collection, treatment_name]:
-        out_filename += level + '/'
-        level_path = Path(out_filename)
-        level_path.mkdir(parents=True, exist_ok=True)
+    out_path = Path('segmented') / collection / treatment_name / filename.name
+    for parent in reversed(out_path.parents):
+        parent.mkdir(parents=True, exist_ok=True)
 
-    out_filename += filename
-    with open(out_filename, 'w') as f:
-        f.write(treated)
-    print('Processed.')
+    out_path.write_text(treated, encoding='utf-8-sig')
+    print('\t\tProcessed', out_path.parts[2])
 
 
-def process_volume(folder, filename, collection):
-    tokens = get_tokens(folder + filename)
+def process_volume(filename, collection):
+
+    tokens = get_tokens(filename)
     process(tokens, get_antconc_format, 'antconc', collection)
     process(tokens, get_lemmatized, 'lemmatized', collection)
     process(tokens, get_cleaned, 'cleaned', collection)
