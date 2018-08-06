@@ -36,6 +36,13 @@ def get_antconc_format(tokens):
     return ' '.join(out)
 
 
+def get_skrt_pos(token):
+    if token.skrt:
+        return 'SKRT'
+    else:
+        return token.pos
+
+
 def get_antconc_pos(tokens):
     out = []
     aa = False
@@ -43,17 +50,17 @@ def get_antconc_pos(tokens):
         if token.affixed:
             if token.aa_word:
                 aa = True
-            out.append('{}_{}'.format(token.unaffixed_word, token.pos))
+            out.append('{}_{}'.format(token.unaffixed_word, get_skrt_pos(token)))
         elif token.affix:
             if aa:
-                out.append('{}_{}'.format('-' + token.cleaned_content, token.pos))
+                out.append('{}_{}'.format('-' + token.cleaned_content, get_skrt_pos(token)))
                 aa = False
             else:
-                out.append('{}_{}'.format('+' + token.cleaned_content, token.pos))
+                out.append('{}_{}'.format('+' + token.cleaned_content, get_skrt_pos(token)))
         elif token.type != 'syl':
-            out.append('{}_{}'.format(token.content, token.pos))
+            out.append('{}_{}'.format(token.content, get_skrt_pos(token)))
         else:
-            out.append('{}_{}'.format(token.cleaned_content, token.pos))
+            out.append('{}_{}'.format(token.cleaned_content, get_skrt_pos(token)))
     return ' '.join(out)
 
 
