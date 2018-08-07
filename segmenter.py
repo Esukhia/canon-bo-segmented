@@ -15,44 +15,71 @@ def get_tokens(filename):
     return tokens
 
 
-def get_antconc_format(tokens):
-    out = []
-    aa = False
-    for token in tokens:
-        if token.affixed:
-            if token.aa_word:
-                aa = True
-            word = token.unaffixed_word
-        elif token.affix:
-            if aa:
-                word = '-' + token.cleaned_content
-                aa = False
+class GetAntconcFormat:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.tokens_len = len(self.tokens)
+        self.key = 'antconc'
+
+    def apply(self):
+        self.prepare()
+        self.find_content()
+        self.mark_affixed_particles()
+        return self.tokens
+
+    def prepare(self):
+        for i in range(self.tokens_len):
+            self.tokens[i]._[self.key] = {}
+
+    def find_content(self):
+        for token in self.tokens:
+            if token.affixed:
+                token._[self.key]['word'] = token.unaffixed_word
+            elif token.type != 'syl':
+                token._[self.key]['word'] = token.content
             else:
-                word = '+' + token.cleaned_content
-        elif token.type != 'syl':
-            word = token.content
-        else:
-            word = token.cleaned_content
+                token._[self.key]['word'] = token.cleaned_content
 
+            token._[self.key]['word'] = self.clean_word(token._[self.key]['word'])
+
+    def mark_affixed_particles(self):
+        for num, token in enumerate(self.tokens):
+            if self.tokens[num - 1].affixed and token.affix:
+                if token.aa_word:
+                    token._[self.key]['word'] = '-' + token._[self.key]['word']
+                else:
+                    token._[self.key]['word'] = '+' + token._[self.key]['word']
+
+    @staticmethod
+    def clean_word(word):
         word = word.replace(' ', '')
-        out.append(word)
-
-    return ' '.join(out)
+        return word
 
 
-class FindPos:
-    def __init__(self):
-        pass
+class GetAntconcPos(GetAntconcFormat):
+    def __init__(self, tokens):
+        super().__init__(tokens)
+        self.key = 'antpos'
 
-    def find_pos(self, token):
-        if self.is_skrt_word(token):
-            return 'SKRT'
-        elif self.is_return(token):
-            return ''
-        elif self.is_toh(token):
-            return ''
-        else:
-            return token.pos
+    def apply(self):
+        self.prepare()
+        self.find_content()
+        self.mark_affixed_particles()
+        self.find_pos()
+        return self.tokens
+
+    def find_pos(self):
+        for token in self.tokens:
+
+            if self.is_skrt_word(token):
+                token._[self.key]['pos'] = 'SKRT'
+
+            elif self.is_return(token) \
+                    or self.is_toh(token):
+                token._[self.key]['pos'] = ''
+
+            else:
+                token._[self.key]['pos'] = token.pos
 
     @staticmethod
     def is_skrt_word(token):
@@ -72,63 +99,65 @@ class FindPos:
                or token.content.lstrip('\n').startswith('T')
 
 
-def get_antconc_pos(tokens):
-    sep = '_'
-    fp = FindPos()
-    out = []
-    aa = False
-    for token in tokens:
-        if token.affixed:
-            if token.aa_word:
-                aa = True
-            word = token.unaffixed_word
-        elif token.affix:
-            if aa:
-                word = '-' + token.cleaned_content
-                aa = False
-            else:
-                word = '+' + token.cleaned_content
-        elif token.type != 'syl':
-            word = token.content
-        else:
-            word = token.cleaned_content
-
-        pos = fp.find_pos(token)
-        word = word.replace(' ', '')
-        if pos:
-            out.append(f'{word}{sep}{pos}')
-        else:
-            out.append(word)
-    return ' '.join(out)
-
-
 def get_lemmatized(tokens):
-    out = [token.lemma if token.type == 'syl' else token.content for token in tokens]
-    return ' '.join(out)
+    key = 'lemmatized'
+    for token in tokens:
+        token._[key] = {}   # initialize custom data for this token
+        if token.type == 'syl':
+            token._[key]['word'] = token.lemma
+        else:
+            token._[key]['word'] = token.content
+    return tokens
 
 
 def get_cleaned(tokens):
-    out = [token.cleaned_content if token.type == 'syl' else token.content for token in tokens]
+    key = 'cleaned'
+    for token in tokens:
+        token._[key] = {}   # initialize custom data for this token
+        if token.type == 'syl':
+            token._[key]['word'] = token.cleaned_content
+        else:
+            token._[key]['word'] = token.content
+    return tokens
+
+
+def generate_output(tokens, treatment):
+    sep = '_'
+    out = []
+    for token in tokens:
+        if 'pos' in token._[treatment].keys():
+            if token._[treatment]['pos']:
+                out.append(f"{token._[treatment]['word']}{sep}{token._[treatment]['pos']}")
+            else:
+                out.append(token._[treatment]['word'])
+        else:
+            out.append(token._[treatment]['word'])
     return ' '.join(out)
 
 
-def process(tokens, treatment, treatment_name, collection):
-    treated = treatment(tokens)
-    out_path = Path('segmented') / collection / treatment_name / filename.name
-    for parent in reversed(out_path.parents):
-        parent.mkdir(parents=True, exist_ok=True)
+def write_to_file(tokens, collection):
+    treatments = list(tokens[0]._.keys())
 
-    out_path.write_text(treated, encoding='utf-8-sig')
-    print('\t\tProcessed', out_path.parts[2])
+    for treatment in treatments:
+        # create directories
+        out_path = Path('segmented') / collection / treatment / filename.name
+        for parent in reversed(out_path.parents):
+            parent.mkdir(parents=True, exist_ok=True)
+
+        treated = generate_output(tokens, treatment)
+
+        out_path.write_text(treated, encoding='utf-8-sig')
 
 
 def process_volume(filename, collection):
-
     tokens = get_tokens(filename)
-    process(tokens, get_antconc_format, 'antconc', collection)
-    process(tokens, get_lemmatized, 'lemmatized', collection)
-    process(tokens, get_cleaned, 'cleaned', collection)
-    process(tokens, get_antconc_pos, 'antconc-pos', collection)
+
+    tokens = GetAntconcFormat(tokens).apply()
+    tokens = GetAntconcPos(tokens).apply()
+    tokens = get_lemmatized(tokens)
+    tokens = get_cleaned(tokens)
+
+    write_to_file(tokens, collection)
 
 
 if __name__ == '__main__':
