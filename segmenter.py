@@ -22,45 +22,83 @@ def get_antconc_format(tokens):
         if token.affixed:
             if token.aa_word:
                 aa = True
-            out.append(token.unaffixed_word)
+            word = token.unaffixed_word
         elif token.affix:
             if aa:
-                out.append('-' + token.cleaned_content)
+                word = '-' + token.cleaned_content
                 aa = False
             else:
-                out.append('+' + token.cleaned_content)
+                word = '+' + token.cleaned_content
         elif token.type != 'syl':
-            out.append(token.content)
+            word = token.content
         else:
-            out.append(token.cleaned_content)
+            word = token.cleaned_content
+
+        word = word.replace(' ', '')
+        out.append(word)
+
     return ' '.join(out)
 
 
-def get_skrt_pos(token):
-    if token.skrt:
-        return 'SKRT'
-    else:
-        return token.pos
+class FindPos:
+    def __init__(self):
+        pass
+
+    def find_pos(self, token):
+        if self.is_skrt_word(token):
+            return 'SKRT'
+        elif self.is_return(token):
+            return ''
+        elif self.is_toh(token):
+            return ''
+        else:
+            return token.pos
+
+    @staticmethod
+    def is_skrt_word(token):
+        return token.skrt and (token.pos == 'OOV'
+                               or token.pos == 'oov'
+                               or token.pos == 'non-word'
+                               or token.pos == 'X'
+                               or token.pos == 'syl')
+
+    @staticmethod
+    def is_return(token):
+        return token.content == '\n'
+
+    @staticmethod
+    def is_toh(token):
+        return token.content.startswith('T') \
+               or token.content.lstrip('\n').startswith('T')
 
 
 def get_antconc_pos(tokens):
+    sep = '_'
+    fp = FindPos()
     out = []
     aa = False
     for token in tokens:
         if token.affixed:
             if token.aa_word:
                 aa = True
-            out.append('{}_{}'.format(token.unaffixed_word, get_skrt_pos(token)))
+            word = token.unaffixed_word
         elif token.affix:
             if aa:
-                out.append('{}_{}'.format('-' + token.cleaned_content, get_skrt_pos(token)))
+                word = '-' + token.cleaned_content
                 aa = False
             else:
-                out.append('{}_{}'.format('+' + token.cleaned_content, get_skrt_pos(token)))
+                word = '+' + token.cleaned_content
         elif token.type != 'syl':
-            out.append('{}_{}'.format(token.content, get_skrt_pos(token)))
+            word = token.content
         else:
-            out.append('{}_{}'.format(token.cleaned_content, get_skrt_pos(token)))
+            word = token.cleaned_content
+
+        pos = fp.find_pos(token)
+        word = word.replace(' ', '')
+        if pos:
+            out.append(f'{word}{sep}{pos}')
+        else:
+            out.append(word)
     return ' '.join(out)
 
 
@@ -96,10 +134,10 @@ def process_volume(filename, collection):
 if __name__ == '__main__':
     kangyur = 'k'
     k_folder = Path('files') / kangyur
-    for filename in list(k_folder.glob('*.txt'))[98:99]:
+    for filename in sorted(list(k_folder.glob('*.txt')))[98:99]:
         process_volume(filename, kangyur)
-
-    tengyur = 't'
-    t_folder = Path('files') / tengyur
-    for filename in list(t_folder.glob('*.txt'))[20:21]:
-        process_volume(filename, tengyur)
+    #
+    # tengyur = 't'
+    # t_folder = Path('files') / tengyur
+    # for filename in list(t_folder.glob('*.txt'))[20:21]:
+    #     process_volume(filename, tengyur)
