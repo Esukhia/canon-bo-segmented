@@ -555,6 +555,8 @@ paket-files/
 
 default.profile
 
+segmented/
+
 # pybo
 *.pickled
 
